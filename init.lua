@@ -1,62 +1,19 @@
+
+
 --[[
 
-=====================================================================
-==================== READ THIS BEFORE CONTINUING ====================
-=====================================================================
-========                                    .-----.          ========
-========         .----------------------.   | === |          ========
-========         |.-""""""""""""""""""-.|   |-----|          ========
-========         ||                    ||   | === |          ========
-========         ||   KICKSTART.NVIM   ||   |-----|          ========
-========         ||                    ||   | === |          ========
-========         ||                    ||   |-----|          ========
-========         ||:Tutor              ||   |:::::|          ========
-========         |'-..................-'|   |____o|          ========
-========         `"")----------------(""`   ___________      ========
-========        /::::::::::|  |::::::::::\  \ no mouse \     ========
-========       /:::========|  |==hjkl==:::\  \ required \    ========
-========      '""""""""""""'  '""""""""""""'  '""""""""""'   ========
-========                                                     ========
-=====================================================================
-=====================================================================
+short lua guide - https://learnxinyminutes.com/docs/lua/
 
-What is Kickstart?
 
-  Kickstart.nvim is *not* a distribution.
+`:help lua-guide` - a reference for how Neovim integrates Lua.
+HTML version: https://neovim.io/doc/user/lua-guide.html
 
-  Kickstart.nvim is a starting point for your own configuration.
-    The goal is that you can read every line of code, top-to-bottom, understand
-    what your configuration is doing, and modify it to suit your needs.
 
-    Once you've done that, you can start exploring, configuring and tinkering to
-    make Neovim your own! That might mean leaving Kickstart just the way it is for a while
-    or immediately breaking it into modular pieces. It's up to you!
+`:Tutor` - to learn some vim / neovim basics
 
-    If you don't know anything about Lua, I recommend taking some time to read through
-    a guide. One possible example which will only take 10-15 minutes:
-      - https://learnxinyminutes.com/docs/lua/
 
-    After understanding a bit more about Lua, you can use `:help lua-guide` as a
-    reference for how Neovim integrates Lua.
-    - :help lua-guide
-    - (or HTML version): https://neovim.io/doc/user/lua-guide.html
+`:help` - neovim docs
 
-Kickstart Guide:
-
-  TODO: The very first thing you should do is to run the command `:Tutor` in Neovim.
-
-    If you don't know what this means, type the following:
-      - <escape key>
-      - :
-      - Tutor
-      - <enter key>
-
-    (If you already know the Neovim basics, you can skip this step.)
-
-  Once you've completed that, you can continue working through **AND READING** the rest
-  of the kickstart init.lua.
-
-  Next, run AND READ `:help`.
     This will open up a help window with some basic information
     about reading, navigating and searching the builtin help documentation.
 
@@ -66,23 +23,8 @@ Kickstart Guide:
     MOST IMPORTANTLY, we provide a keymap "<space>sh" to [s]earch the [h]elp documentation,
     which is very useful when you're not exactly sure of what you're looking for.
 
-  I have left several `:help X` comments throughout the init.lua
-    These are hints about where to find more information about the relevant settings,
-    plugins or Neovim features used in Kickstart.
-
-   NOTE: Look for lines like this
-
-    Throughout the file. These are for you, the reader, to help you understand what is happening.
-    Feel free to delete them once you know what you're doing, but they should serve as a guide
-    for when you are first encountering a few different constructs in your Neovim config.
-
-If you experience any errors while trying to install kickstart, run `:checkhealth` for more info.
-
-I hope you enjoy your Neovim journey,
-- TJ
-
-P.S. You can delete this when you're done too. It's your config now! :)
 --]]
+
 
 -- ============================================================
 -- SECTION 1: OPTIONS
@@ -171,6 +113,11 @@ do
   -- instead raise a dialog asking if you wish to save the current file(s)
   -- See `:help 'confirm'`
   vim.o.confirm = true
+
+  vim.opt.exrc = true
+
+  -- vim.o.termguicolors = true
+  -- vim.cmd('colorscheme default')
 end
 
 -- ============================================================
@@ -178,6 +125,125 @@ end
 -- basic keymaps, basic autocmds
 -- ============================================================
 do
+
+  -- File Explorer
+  vim.g.netrw_preview = 1 -- make preview vertical
+  vim.g.netrw_alto = 0 -- open preview to the right
+
+  --vim.keymap.set('n', '<leader>e', '<cmd>Explore<CR>', { desc = 'File explorer - open full window' })
+  --vim.keymap.set('n', '<leader>l', '<cmd>Lexplore<CR>', { desc = 'Toffle file explorer as a left sidebar' })
+  vim.keymap.set('n', '<leader>e', vim.cmd.Ex, { desc = 'File explorer - open full window' })
+  vim.keymap.set('n', '<leader>l', vim.cmd.Lex, { desc = 'Toggle file explorer as a left sidebar' })
+
+  -- Netrw-specific keymaps: p = open preview, P = close preview
+  vim.api.nvim_create_autocmd("FileType", {
+    pattern = "netrw",
+    callback = function()
+      -- vim.keymap.set("n", "p", ":pedit <cfile><CR>", { buffer = true, desc = "Open preview (netrw)" })
+      vim.keymap.set("n", "P", ":pclose<CR>", { buffer = true, desc = "Close preview (netrw)" })
+      vim.keymap.set("n", "<leader>p", "<C-W>P", { buffer = true, desc = "Focus preview (netrw)" })
+      vim.keymap.set("n", "<leader>P", "<C-W><C-P>", { buffer = true, desc = "Focus file navigation (netrw)" })
+    end,
+  })
+
+  vim.api.nvim_create_autocmd({'BufWinEnter', 'WinEnter'}, {
+    callback = function()
+      if vim.bo.buftype == '' then
+        vim.wo.number = true
+      end
+    end,
+  })
+  vim.api.nvim_create_autocmd('FileType', {
+    pattern = 'netrw',
+    callback = function()
+      vim.wo.number = false
+    end,
+  })
+
+
+
+
+  -- (primes)
+    -- moving around text blocks
+  vim.keymap.set("v", "J", ":m '>+1<CR>gv=gv")
+  vim.keymap.set("v", "K", ":m '<-2<CR>gv=gv")
+   -- you can use <leader>y to copy to C-c clipboard
+  vim.keymap.set("n", "<leader>y", "\"+y")
+  vim.keymap.set("v", "<leader>y", "\"+y")
+
+
+  -- terminal
+    -- i - insert mode
+    -- esc-esc - vim mode
+    -- :q exit the terminal
+  -- (TJ) spawn a terminal at the bottom
+  vim.keymap.set("n", "<leader>tj", function ()
+    vim.cmd.vnew()
+    vim.cmd.term()
+    vim.cmd.wincmd("J")
+    vim.api.nvim_win_set_height(0,15)
+  end, { desc = '[j] Open terminal at the bottom' })
+
+-- -- (TJ) spawn a terminal at the bottom
+-- vim.keymap.set("n", "<leader>tj", function ()
+--   vim.cmd.vnew()
+--   vim.cmd.term()
+--   vim.cmd.wincmd("J")
+--   vim.api.nvim_win_set_height(0,15)
+-- end, { desc = '[j] Open terminal at the bottom' })
+--
+-- -- (TJ) spawn a terminal to the left
+-- vim.keymap.set("n", "<leader>th", function ()
+--   vim.cmd.vsplit()
+--   vim.cmd.term()
+--   vim.cmd.wincmd("H")
+--   vim.api.nvim_win_set_width(0,40)
+-- end, { desc = '[h] Open terminal at the left' })
+--
+-- -- (TJ) spawn a terminal to the right
+-- vim.keymap.set("n", "<leader>tl", function ()
+--   vim.cmd.vsplit()
+--   vim.cmd.term()
+--   vim.cmd.wincmd("L")
+--   vim.api.nvim_win_set_width(0,40)
+-- end, { desc = '[l] Open terminal at the right' })
+
+
+
+  -- jumping around the opened windows
+  local opts = { silent = true }
+  vim.keymap.set("n", "<A-h>", "<C-w>h", opts)
+  vim.keymap.set("n", "<A-j>", "<C-w>j", opts)
+  vim.keymap.set("n", "<A-k>", "<C-w>k", opts)
+  vim.keymap.set("n", "<A-l>", "<C-w>l", opts)
+
+  -- tabs
+  vim.keymap.set("n", "<leader>tn", "<cmd>tabnew<CR>", { desc = "Open a new tab" } )
+  vim.keymap.set("n", "<leader>tc", "<cmd>tabclose<CR>", { desc = "Close a tab" } )
+  for i = 1, 9 do
+    vim.keymap.set("n", "<A-" .. i .. ">", function()
+      vim.cmd("tabnext " .. i)
+    end, { desc = "Go to tab " .. i })
+  end
+
+
+  -- general vim movements tweaks
+  vim.keymap.set("n", "<C-d>", "<C-d>zz")
+  vim.keymap.set("n", "<C-u>", "<C-u>zz")
+  vim.keymap.set("n", "n", "nzzzv")
+  vim.keymap.set("n", "N", "Nzzzv")
+
+  ---- Move current tab up (toward lower index)
+  --vim.keymap.set("n", "<C-S-Up>", function()
+  --  vim.cmd("tabmove -1")
+  --end, { desc = "Move tab up" })
+  ---- Move current tab down (toward higher index)
+  --vim.keymap.set("n", "<C-S-Down>", function()
+  --  vim.cmd("tabmove +1")
+  --end, { desc = "Move tab down" })
+
+
+
   -- [[ Basic Keymaps ]]
   --  See `:help vim.keymap.set()`
 
@@ -251,6 +317,8 @@ do
     group = vim.api.nvim_create_augroup('kickstart-highlight-yank', { clear = true }),
     callback = function() vim.hl.on_yank() end,
   })
+
+  -- vim.keymap.set('n', '<leader>ex', builtin.findfiles, {})
 end
 
 -- ============================================================
@@ -346,6 +414,8 @@ do
   vim.pack.add { gh 'NMAC427/guess-indent.nvim' }
   require('guess-indent').setup {}
 
+  vim.pack.add { "https://github.com/dmshvedchenko/persist.nvim" }
+
   -- Here is a more advanced configuration example that passes options to `gitsigns.nvim`
   --
   -- See `:help gitsigns` to understand what each configuration key does.
@@ -382,22 +452,38 @@ do
   -- change the command under that to load whatever the name of that colorscheme is.
   --
   -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
-  vim.pack.add { gh 'folke/tokyonight.nvim' }
-  ---@diagnostic disable-next-line: missing-fields
-  require('tokyonight').setup {
-    styles = {
-      comments = { italic = false }, -- Disable italics in comments
-    },
-  }
+  -- vim.pack.add { gh 'folke/tokyonight.nvim' }
+  -- ---@diagnostic disable-next-line: missing-fields
+  -- require('tokyonight').setup {
+  --   styles = {
+  --     comments = { italic = false }, -- Disable italics in comments
+  --   },
+  -- }
+  vim.pack.add { gh 'rebelot/kanagawa.nvim' }
+  require("kanagawa").setup({
+    -- terminalColors = true,
+    -- theme = "dragon",
+    -- colors = {
+    --   theme = {
+    --     wave = {
+    --       ui = {
+    --         bg = "#000000",
+    --       },
+    --     },
+    --   },
+    -- },
+  })
+
 
   -- Load the colorscheme here.
-  -- Like many other themes, this one has different styles, and you could load
-  -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-  vim.cmd.colorscheme 'tokyonight-night'
+    -- habamax
+  vim.cmd.colorscheme('kanagawa-dragon')
+  -- vim.cmd.colorscheme('kanagawa-wave')
+  -- vim.cmd.colorscheme('habamax')
 
   -- Highlight todo, notes, etc in comments
-  vim.pack.add { gh 'folke/todo-comments.nvim' }
-  require('todo-comments').setup { signs = false }
+  -- vim.pack.add { gh 'folke/todo-comments.nvim' }
+  -- require('todo-comments').setup { signs = false }
 
   -- [[ mini.nvim ]]
   --  A collection of various small independent plugins/modules
@@ -416,21 +502,21 @@ do
   --  - va)  - [V]isually select [A]round [)]paren
   --  - yiiq - [Y]ank [I]nside [I]+1 [Q]uote
   --  - ci'  - [C]hange [I]nside [']quote
-  require('mini.ai').setup {
-    -- NOTE: Avoid conflicts with the built-in incremental selection mappings on Neovim>=0.12 (see `:help treesitter-incremental-selection`)
-    mappings = {
-      around_next = 'aa',
-      inside_next = 'ii',
-    },
-    n_lines = 500,
-  }
+  -- require('mini.ai').setup {
+  --   -- NOTE: Avoid conflicts with the built-in incremental selection mappings on Neovim>=0.12 (see `:help treesitter-incremental-selection`)
+  --   mappings = {
+  --     around_next = 'aa',
+  --     inside_next = 'ii',
+  --   },
+  --   n_lines = 500,
+  -- }
 
   -- Add/delete/replace surroundings (brackets, quotes, etc.)
   --
   -- - saiw) - [S]urround [A]dd [I]nner [W]ord [)]Paren
   -- - sd'   - [S]urround [D]elete [']quotes
   -- - sr)'  - [S]urround [R]eplace [)] [']
-  require('mini.surround').setup()
+  -- require('mini.surround').setup()
 
   -- Simple and easy statusline.
   --  You could remove this setup call if you don't like it,
@@ -443,7 +529,15 @@ do
   -- default behavior. For example, here we set the section for
   -- cursor location to LINE:COLUMN
   ---@diagnostic disable-next-line: duplicate-set-field
-  statusline.section_location = function() return '%2l:%-2v' end
+  statusline.section_location = function()
+  local line = vim.fn.line('.')
+  local col = vim.fn.col('.')
+  local total = vim.fn.line('$')
+  local pct = total > 0 and math.floor((line / total) * 100) or 0
+  local res = string.format('%2d:%-2d %d', line, col, pct) .. '%%'
+  -- vim.notify(res)
+  return res
+  end
 
   -- ... and there is more!
   --  Check out: https://github.com/nvim-mini/mini.nvim
@@ -514,6 +608,7 @@ do
   vim.keymap.set('n', '<leader>sh', builtin.help_tags, { desc = '[S]earch [H]elp' })
   vim.keymap.set('n', '<leader>sk', builtin.keymaps, { desc = '[S]earch [K]eymaps' })
   vim.keymap.set('n', '<leader>sf', builtin.find_files, { desc = '[S]earch [F]iles' })
+  vim.keymap.set('n', '<leader>sgf', builtin.git_files, { desc = '[S]earch [G]it [F]iles' })
   vim.keymap.set('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
   vim.keymap.set({ 'n', 'v' }, '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
   vim.keymap.set('n', '<leader>sg', builtin.live_grep, { desc = '[S]earch by [G]rep' })
@@ -582,8 +677,15 @@ do
 
   -- Shortcut for searching your Neovim configuration files
   vim.keymap.set('n', '<leader>sn', function() builtin.find_files { cwd = vim.fn.stdpath 'config', follow = true } end, { desc = '[S]earch [N]eovim files' })
-end
 
+  vim.cmd.packad('nvim.undotree')
+  vim.keymap.set('n', '<leader>u', function()
+    require('undotree').open({
+      command = "leftabove 60vnew",
+    })
+  end, { desc = "Open undotree" })
+
+end
 -- ============================================================
 -- SECTION 6: LSP
 -- LSP keymaps, server configuration, Mason tools installations
@@ -980,7 +1082,75 @@ do
   --
   --  Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
   -- require 'custom.plugins'
+
+
+  vim.pack.add { { src = gh 'theprimeagen/harpoon', version = 'harpoon2' } }
+  vim.pack.add { gh "nvim-lua/plenary.nvim" }
+
+  local harpoon = require("harpoon")
+  harpoon:setup()
+
+  vim.keymap.set("n", "<leader>hh", function() harpoon.ui:toggle_quick_menu(harpoon:list()) end, { desc = "Harpoon menu" })
+  vim.keymap.set("n", "<leader>ha", function() harpoon:list():append() end, { desc = "Harpoon add file" })
+
+  vim.keymap.set("n", "<leader>hn", function() harpoon:list():next() end, { desc = "Harpoon next item" })
+  vim.keymap.set("n", "<leader>hp", function() harpoon:list():prev() end, { desc = "Harpoon previous item" })
+
+  vim.keymap.set("n", "<leader>1", function() harpoon:list():select(1) end, { desc = "Select item 1 (harpoon)" })
+  vim.keymap.set("n", "<leader>2", function() harpoon:list():select(2) end, { desc = "Select item 2 (harpoon)" })
+  vim.keymap.set("n", "<leader>3", function() harpoon:list():select(3) end, { desc = "Select item 3 (harpoon)" })
+  vim.keymap.set("n", "<leader>4", function() harpoon:list():select(4) end, { desc = "Select item 4 (harpoon)" })
+
 end
+
+
+
+-- ============================================================
+-- SECTION: CUSTOM ASCII WELCOME SCREEN
+-- ============================================================
+--[[
+do
+  local welcome_text = {
+    "",
+    "  _   _ _____ _____ ____  _   _  ____  ",
+    " | \\ | | ____| ____|  _ \\| | | |/ ___| ",
+    " |  \\| |  _| |  _| | |_) | | | | |  _  ",
+    " | |\\  | |___| |___|  _ <| |_| | |_| | ",
+    " |_| \\_|_____|_____|_| \\_\\\\___/ \\____| ",
+    "",
+    "  Welcome to Neovim!",
+    "",
+    "  <leader>sh  Search help",
+    "  <leader>sf  Find files",
+    "  <leader>sg  Live grep",
+    "",
+  }
+
+  vim.api.nvim_create_autocmd("VimEnter", {
+    once = true,
+    callback = function()
+      if vim.fn.argc() > 0 then return end
+      if vim.fn.bufname() ~= "" then return end
+
+      -- Make this a scratch, non-saving buffer
+      vim.bo.buftype = "nofile"
+      vim.bo.bufhidden = "wipe"
+      vim.bo.buflisted = false
+      vim.bo.swapfile = false
+      vim.bo.modifiable = true
+      vim.bo.modified = false
+
+      vim.cmd("silent! %delete _")
+      vim.api.nvim_buf_set_lines(0, 0, -1, false, welcome_text)
+      vim.cmd("normal! gg")
+      vim.bo.filetype = "markdown"
+
+      -- Ensure it's not considered modified
+      vim.cmd("setlocal nomodified")
+    end,
+  })
+end
+--]]
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
