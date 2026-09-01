@@ -120,7 +120,25 @@ do
   -- vim.cmd('colorscheme default')
 
   -- do not add a comment sign when starting a new line from a comment line
-  vim.opt.formatoptions:remove({ "r", "o" })
+  vim.api.nvim_create_autocmd("FileType", {
+    desc = "Disable comment continuation",
+    callback = function()
+      vim.opt_local.formatoptions:remove({ "r", "o" })
+    end,
+  })
+
+
+  -- load vim fugitive only in git repos
+  vim.api.nvim_create_autocmd("User", {
+    pattern = "VeryLazy",
+    callback = function()
+      if vim.fn.isdirectory(".git") == 1 then
+        vim.cmd("packadd fugitive")
+      end
+    end,
+  })
+  vim.cmd('packloadall')
+
 end
 
 -- ============================================================
@@ -198,50 +216,46 @@ do
   -- end
 
 
-  local api = require("nvim-tree.api")
-  local function my_on_attach(bufnr)
-    vim.notify("nvim-tree on_attach called for buf " .. bufnr, vim.log.levels.INFO)
-  
-    local function opts(desc)
-      return { desc = "nvim-tree: " .. desc, buffer = bufnr, noremap = true, silent = true, nowait = true }
-    end
-  
-    vim.keymap.set("n", "<CR>", function()
-      local node = api.tree.get_node_under_cursor()
-      if not node then
-        vim.notify("nvim-tree: no node under cursor", vim.log.levels.WARN)
-        return
-      end
-  
-      local path = node.absolute_path
-      if not path then
-        vim.notify("nvim-tree: node has no absolute_path", vim.log.levels.WARN)
-        return
-      end
-  
-      local ext = path:match("%.(%w+)$") or ""
-      ext = ext:lower()
-  
-      local image_exts = {
-        png = true,
-        jpg = true,
-        jpeg = true,
-        gif = true,
-        webp = true,
-        bmp = true,
-        svg = true,
-      }
-  
-      if image_exts[ext] then
-        vim.notify("Opening image with imv: " .. path, vim.log.levels.INFO)
-        vim.cmd("silent !imv " .. vim.fn.shellescape(path) .. " &")
-        return
-      end
-  
-      vim.notify("Opening file normally: " .. path, vim.log.levels.INFO)
-      api.node.open.edit()
-    end, opts("Open"))
+local api = require("nvim-tree.api")
+
+local function my_on_attach(bufnr)
+  local function opts(desc)
+    return { desc = "nvim-tree: " .. desc, buffer = bufnr, noremap = true, silent = true, nowait = true }
   end
+
+  vim.keymap.set("n", "<CR>", function()
+    local node = api.tree.get_node_under_cursor()
+    if not node then return end
+
+    local path = node.absolute_path
+    if not path then return end
+
+    local ext = (path:match("%.(%w+)$") or ""):lower()
+
+    local image_exts = {
+      png = true,
+      jpg = true,
+      jpeg = true,
+      gif = true,
+      webp = true,
+      bmp = true,
+      svg = true,
+    }
+
+    if image_exts[ext] then
+      vim.cmd("silent !imv " .. vim.fn.shellescape(path) .. " &")
+      return
+    end
+
+    if ext == "pdf" then
+      vim.cmd("silent !mupdf " .. vim.fn.shellescape(path) .. " &")
+      return
+    end
+
+    api.node.open.edit()
+  end, opts("Open"))
+end
+
 
   require("nvim-tree").setup({
     view = {
@@ -253,15 +267,10 @@ do
     },
     on_attach = my_on_attach,
   })
-
   vim.keymap.set("n", "<leader>e", "<cmd>NvimTreeToggle<CR>", {desc = "Toggle tree view"})
 
   -- View any image or GIF with imv
   -- vim.keymap.set('n', '<leader>v', ':silent !imv % &<CR>', { desc = 'View with imv' })
-
-
-
-
 
 
 
@@ -431,6 +440,11 @@ do
   })
 
   -- vim.keymap.set('n', '<leader>ex', builtin.findfiles, {})
+
+
+
+
+  vim.keymap.set('n', '<leader>g', '<cmd>Git<CR>')
 end
 
 -- ============================================================
