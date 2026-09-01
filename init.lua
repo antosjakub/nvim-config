@@ -118,6 +118,9 @@ do
 
   -- vim.o.termguicolors = true
   -- vim.cmd('colorscheme default')
+
+  -- do not add a comment sign when starting a new line from a comment line
+  vim.opt.formatoptions:remove({ "r", "o" })
 end
 
 -- ============================================================
@@ -126,41 +129,147 @@ end
 -- ============================================================
 do
 
-  -- File Explorer
-  vim.g.netrw_preview = 1 -- make preview vertical
-  vim.g.netrw_alto = 0 -- open preview to the right
+  -- -- File Explorer
+  -- vim.g.netrw_preview = 1 -- make preview vertical
+  -- vim.g.netrw_alto = 0 -- open preview to the right
 
-  --vim.keymap.set('n', '<leader>e', '<cmd>Explore<CR>', { desc = 'File explorer - open full window' })
-  --vim.keymap.set('n', '<leader>l', '<cmd>Lexplore<CR>', { desc = 'Toffle file explorer as a left sidebar' })
-  vim.keymap.set('n', '<leader>e', vim.cmd.Ex, { desc = 'File explorer - open full window' })
-  vim.keymap.set('n', '<leader>l', vim.cmd.Lex, { desc = 'Toggle file explorer as a left sidebar' })
+  -- --vim.keymap.set('n', '<leader>e', '<cmd>Explore<CR>', { desc = 'File explorer - open full window' })
+  -- --vim.keymap.set('n', '<leader>l', '<cmd>Lexplore<CR>', { desc = 'Toffle file explorer as a left sidebar' })
+  -- vim.keymap.set('n', '<leader>e', vim.cmd.Ex, { desc = 'File explorer - open full window' })
+  -- vim.keymap.set('n', '<leader>l', vim.cmd.Lex, { desc = 'Toggle file explorer as a left sidebar' })
 
-  -- Netrw-specific keymaps: p = open preview, P = close preview
-  vim.api.nvim_create_autocmd("FileType", {
-    pattern = "netrw",
-    callback = function()
-      -- vim.keymap.set("n", "p", ":pedit <cfile><CR>", { buffer = true, desc = "Open preview (netrw)" })
-      vim.keymap.set("n", "P", ":pclose<CR>", { buffer = true, desc = "Close preview (netrw)" })
-      vim.keymap.set("n", "<leader>p", "<C-W>P", { buffer = true, desc = "Focus preview (netrw)" })
-      vim.keymap.set("n", "<leader>P", "<C-W><C-P>", { buffer = true, desc = "Focus file navigation (netrw)" })
-    end,
+  -- -- Netrw-specific keymaps: p = open preview, P = close preview
+  -- vim.api.nvim_create_autocmd("FileType", {
+  --   pattern = "netrw",
+  --   callback = function()
+  --     -- vim.keymap.set("n", "p", ":pedit <cfile><CR>", { buffer = true, desc = "Open preview (netrw)" })
+  --     vim.keymap.set("n", "P", ":pclose<CR>", { buffer = true, desc = "Close preview (netrw)" })
+  --     vim.keymap.set("n", "<leader>p", "<C-W>P", { buffer = true, desc = "Focus preview (netrw)" })
+  --     vim.keymap.set("n", "<leader>P", "<C-W><C-P>", { buffer = true, desc = "Focus file navigation (netrw)" })
+  --   end,
+  -- })
+
+  -- vim.api.nvim_create_autocmd({'BufWinEnter', 'WinEnter'}, {
+  --   callback = function()
+  --     if vim.bo.buftype == '' then
+  --       vim.wo.number = true
+  --     end
+  --   end,
+  -- })
+  -- vim.api.nvim_create_autocmd('FileType', {
+  --   pattern = 'netrw',
+  --   callback = function()
+  --     vim.wo.number = false
+  --   end,
+  -- })
+
+  vim.pack.add({
+    { src = 'https://github.com/nvim-tree/nvim-web-devicons' }
   })
+  -- vim.opt.guifont = "JetBrainsMono Nerd Font:h11"
 
-  vim.api.nvim_create_autocmd({'BufWinEnter', 'WinEnter'}, {
-    callback = function()
-      if vim.bo.buftype == '' then
-        vim.wo.number = true
+  vim.pack.add({
+    { src = 'https://github.com/nvim-tree/nvim-tree.lua' },
+  })
+  vim.g.loaded_netrw = 1
+  vim.g.loaded_netrwPlugin = 1
+  -- optionally enable 24-bit colour
+  vim.opt.termguicolors = true
+
+
+  -- local api = require("nvim-tree.api")
+  -- local function my_on_attach(bufnr)
+  --   -- api.config.mappings.default_on_attach(bufnr)
+  --   api.map.on_attach.default(bufnr)
+  -- 
+  --   vim.keymap.set("n", "<CR>", function()
+  --     local node = api.tree.get_node_under_cursor()
+  --     local path = node and node.absolute_path
+  --     if not path then return end
+  -- 
+  --     local ext = path:match("%.(%w+)$") or ""
+  --     if ext:match("^(png|jpg|jpeg|gif|webp|bmp|svg)$") then
+  --       vim.cmd("silent !imv " .. vim.fn.shellescape(path) .. " &")
+  --       return
+  --     end
+  -- 
+  --     api.node.open.edit()
+  --   end, { buffer = bufnr, desc = "Open", noremap = true, silent = true, nowait = true })
+  -- end
+
+
+  local api = require("nvim-tree.api")
+  local function my_on_attach(bufnr)
+    vim.notify("nvim-tree on_attach called for buf " .. bufnr, vim.log.levels.INFO)
+  
+    local function opts(desc)
+      return { desc = "nvim-tree: " .. desc, buffer = bufnr, noremap = true, silent = true, nowait = true }
+    end
+  
+    vim.keymap.set("n", "<CR>", function()
+      local node = api.tree.get_node_under_cursor()
+      if not node then
+        vim.notify("nvim-tree: no node under cursor", vim.log.levels.WARN)
+        return
       end
-    end,
-  })
-  vim.api.nvim_create_autocmd('FileType', {
-    pattern = 'netrw',
-    callback = function()
-      vim.wo.number = false
-    end,
+  
+      local path = node.absolute_path
+      if not path then
+        vim.notify("nvim-tree: node has no absolute_path", vim.log.levels.WARN)
+        return
+      end
+  
+      local ext = path:match("%.(%w+)$") or ""
+      ext = ext:lower()
+  
+      local image_exts = {
+        png = true,
+        jpg = true,
+        jpeg = true,
+        gif = true,
+        webp = true,
+        bmp = true,
+        svg = true,
+      }
+  
+      if image_exts[ext] then
+        vim.notify("Opening image with imv: " .. path, vim.log.levels.INFO)
+        vim.cmd("silent !imv " .. vim.fn.shellescape(path) .. " &")
+        return
+      end
+  
+      vim.notify("Opening file normally: " .. path, vim.log.levels.INFO)
+      api.node.open.edit()
+    end, opts("Open"))
+  end
+
+  require("nvim-tree").setup({
+    view = {
+      width = 40,
+    },
+    filters = {
+      dotfiles = true,
+      git_ignored = false
+    },
+    on_attach = my_on_attach,
   })
 
+  vim.keymap.set("n", "<leader>e", "<cmd>NvimTreeToggle<CR>", {desc = "Toggle tree view"})
 
+  -- View any image or GIF with imv
+  -- vim.keymap.set('n', '<leader>v', ':silent !imv % &<CR>', { desc = 'View with imv' })
+
+
+
+
+
+
+
+
+
+
+  -- vim.pack.add { "https://github.com/lervag/vimtex"}
+  -- vim.g.vimtex_view_method = "zathura"
 
 
   -- (primes)
@@ -212,16 +321,16 @@ do
 
   -- jumping around the opened windows
   local opts = { silent = true }
-  vim.keymap.set("n", "<A-h>", "<C-w>h", opts)
-  vim.keymap.set("n", "<A-j>", "<C-w>j", opts)
-  vim.keymap.set("n", "<A-k>", "<C-w>k", opts)
-  vim.keymap.set("n", "<A-l>", "<C-w>l", opts)
+  vim.keymap.set("n", "<C-h>", "<C-w>h", opts)
+  vim.keymap.set("n", "<C-j>", "<C-w>j", opts)
+  vim.keymap.set("n", "<C-k>", "<C-w>k", opts)
+  vim.keymap.set("n", "<C-l>", "<C-w>l", opts)
 
   -- tabs
   vim.keymap.set("n", "<leader>tn", "<cmd>tabnew<CR>", { desc = "Open a new tab" } )
   vim.keymap.set("n", "<leader>tc", "<cmd>tabclose<CR>", { desc = "Close a tab" } )
   for i = 1, 9 do
-    vim.keymap.set("n", "<A-" .. i .. ">", function()
+    vim.keymap.set("n", "<C-" .. i .. ">", function()
       vim.cmd("tabnext " .. i)
     end, { desc = "Go to tab " .. i })
   end
@@ -242,6 +351,9 @@ do
   --  vim.cmd("tabmove +1")
   --end, { desc = "Move tab down" })
 
+  -- seamlessly reload modified files
+  vim.opt.autoread = true
+  vim.opt.clipboard = "unnamedplus"
 
 
   -- [[ Basic Keymaps ]]
@@ -541,6 +653,26 @@ do
 
   -- ... and there is more!
   --  Check out: https://github.com/nvim-mini/mini.nvim
+
+  -- -- Launches mupdf viewer when pdf is opened
+  -- local function open_pdf_with_mupdf()
+  --   local file = vim.fn.expand("<afile>:p")
+  --   vim.fn.jobstart({ "mupdf", file }, { detach = true })
+  --   --vim.cmd("enew")
+  --   vim.notify("Opened PDF with mupdf: " .. file)
+  --   --local term_cmd = "term mupdf " .. vim.fn.fnameescape(file)
+  --   ---- vim.cmd("enew")
+  --   --vim.cmd(term_cmd)
+  --   ---- vim.cmd("startinsert")
+  -- end
+
+  -- vim.api.nvim_create_autocmd("BufReadCmd", {
+  --   pattern = "*.pdf",
+  --   group = vim.api.nvim_create_augroup("OpenPdfWithMupdf", { clear = true }),
+  --   callback = open_pdf_with_mupdf,
+  --   nested = true,
+  -- })
+
 end
 
 -- ============================================================
@@ -1100,6 +1232,13 @@ do
   vim.keymap.set("n", "<leader>2", function() harpoon:list():select(2) end, { desc = "Select item 2 (harpoon)" })
   vim.keymap.set("n", "<leader>3", function() harpoon:list():select(3) end, { desc = "Select item 3 (harpoon)" })
   vim.keymap.set("n", "<leader>4", function() harpoon:list():select(4) end, { desc = "Select item 4 (harpoon)" })
+
+
+
+  -- markdown preview
+  vim.pack.add({
+    "https://github.com/OXY2DEV/markview.nvim",
+  })
 
 end
 
