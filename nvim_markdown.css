@@ -1,0 +1,27 @@
+
+
+
+#page-header {
+	background-color: unset;
+	border: none;
+}
+
+body {
+	font-family: "New Times Roman";
+  	font-size: 20px;
+  	/* font-family: "Noto Sans Mono"; */
+}
+
+
+.katex,
+.katex-display {
+	font-size: 1em !important;
+}
+
+
+[data-theme="dark"] .anchor,
+[data-theme="dark"] .octicon,
+[data-theme="dark"] .octicon-link {
+	fill: white;
+}
+

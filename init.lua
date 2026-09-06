@@ -57,6 +57,8 @@ do
   -- Enable mouse mode, can be useful for resizing splits for example!
   vim.o.mouse = 'a'
 
+  vim.opt.mousescroll = "ver:1"
+
   -- Don't show the mode, since it's already in the status line
   vim.o.showmode = false
 
@@ -216,9 +218,22 @@ do
   -- end
 
 
-local api = require("nvim-tree.api")
 
 local function my_on_attach(bufnr)
+  local api = require("nvim-tree.api")
+
+  -- api.config.mappings.default_on_attach(bufnr)
+
+  api.map.on_attach.default(bufnr)
+
+  vim.keymap.set("n", "<BS>", api.node.navigate.parent_close, {
+      buffer = bufnr,
+      noremap = true,
+      silent = true,
+      nowait = true,
+      desc = "Close parent directory"
+  })
+
   local function opts(desc)
     return { desc = "nvim-tree: " .. desc, buffer = bufnr, noremap = true, silent = true, nowait = true }
   end
@@ -243,12 +258,22 @@ local function my_on_attach(bufnr)
     }
 
     if image_exts[ext] then
-      vim.cmd("silent !imv " .. vim.fn.shellescape(path) .. " &")
+      -- vim.cmd("silent !imv " .. vim.fn.shellescape(path) .. " &")
+      vim.fn.jobstart({"imv", path}, {detach = true})
       return
     end
 
     if ext == "pdf" then
-      vim.cmd("silent !mupdf " .. vim.fn.shellescape(path) .. " &")
+      -- vim.cmd("silent !mupdf " .. vim.fn.shellescape(path) .. " &")
+      vim.fn.jobstart({"mupdf", path}, {detach = true})
+      return
+    end
+
+    if ext == "ipynb" then
+      vim.fn.jkbstart(
+          {"~/venv_base/bin/jupyter-notebook", path},
+          {detach = true}
+      )
       return
     end
 
@@ -271,7 +296,6 @@ end
 
   -- View any image or GIF with imv
   -- vim.keymap.set('n', '<leader>v', ':silent !imv % &<CR>', { desc = 'View with imv' })
-
 
 
 
@@ -445,6 +469,7 @@ end
 
 
   vim.keymap.set('n', '<leader>g', '<cmd>Git<CR>')
+
 end
 
 -- ============================================================
@@ -1249,10 +1274,53 @@ do
 
 
 
-  -- markdown preview
-  vim.pack.add({
-    "https://github.com/OXY2DEV/markview.nvim",
-  })
+  vim.g.mkdp_page_title = '「${name}.md」'
+  vim.g.mkdp_markdown_css = vim.fn.expand('~/.config/nvim/nvim_markdown.css')
+
+  -- Enable markdown-preview for markdown files
+  vim.g.mkdp_filetypes = { "markdown", "md" }
+
+  -- Optional: auto-start preview when entering a markdown buffer
+  vim.g.mkdp_auto_start = 0  -- set to 1 if you want it auto-starting
+
+  -- Optional: auto-close preview when leaving markdown buffer
+  -- vim.g.mkdp_auto_close = 1
+
+  -- Optional: set theme (dark or light)
+  vim.g.mkdp_theme = "dark"
+
+  -- Optional: KaTeX config (empty = defaults, which work well for math)
+  vim.g.mkdp_preview_options = {
+    katex = {},
+    mkit = {},
+    disable_sync_scroll = 0,
+    sync_scroll_type = "middle",
+    hide_yaml_meta = 1,
+  }
+  vim.keymap.set("n", "<leader>m", "<Plug>MarkdownPreviewToggle", { desc = "Toggle Markdown Preview [v2]" })
+
+
+  -- -- markdown preview
+  -- vim.pack.add({
+  --   "https://github.com/OXY2DEV/markview.nvim",
+  -- })
+  -- require("markview").setup({
+  --   latex = {
+  --     enable = true,
+  --     inlines = { enable = true },   -- for $...$
+  --     block  = { enable = true },   -- for $$...$$
+  --     symbols = { enable = true },
+  --     operators = { enable = true },
+  --     subscript = { enable = true },
+  --     superscript = { enable = true },
+  --   },
+  --   preview = {
+  --     enable = true,
+  --     filetypes = { "markdown", "md" },
+  --   }
+  -- })
+  -- vim.keymap.set("n", "<leader>m", "<cmd>Markview splitToggle<CR>")
+
 
 end
 
@@ -1261,22 +1329,38 @@ end
 -- ============================================================
 -- SECTION: CUSTOM ASCII WELCOME SCREEN
 -- ============================================================
---[[
+
 do
   local welcome_text = {
+    -- "",
+    -- "  _   _ _____ _____ ____  _   _  ____  ",
+    -- " | \\ | | ____| ____|  _ \\| | | |/ ___| ",
+    -- " |  \\| |  _| |  _| | |_) | | | | |  _  ",
+    -- " | |\\  | |___| |___|  _ <| |_| | |_| | ",
+    -- " |_| \\_|_____|_____|_| \\_\\\\___/ \\____| ",
+    -- "",
+
     "",
-    "  _   _ _____ _____ ____  _   _  ____  ",
-    " | \\ | | ____| ____|  _ \\| | | |/ ___| ",
-    " |  \\| |  _| |  _| | |_) | | | | |  _  ",
-    " | |\\  | |___| |___|  _ <| |_| | |_| | ",
-    " |_| \\_|_____|_____|_| \\_\\\\___/ \\____| ",
     "",
-    "  Welcome to Neovim!",
     "",
-    "  <leader>sh  Search help",
-    "  <leader>sf  Find files",
-    "  <leader>sg  Live grep",
     "",
+    "",
+    "                                  .---------------------------.",
+    "                                 /  Welcome back, sir Kubs.  /",
+    "                                /---------------------------*",
+    "                               /",
+    "",
+    "                          (0>",
+    "                          //\\",
+    "                          V_/_",
+    "",
+    "",
+    "",
+    "",
+    -- "  <leader>sh  Search help",
+    -- "  <leader>sf  Find files",
+    -- "  <leader>sg  Live grep",
+    -- "",
   }
 
   vim.api.nvim_create_autocmd("VimEnter", {
@@ -1303,7 +1387,7 @@ do
     end,
   })
 end
---]]
+
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
