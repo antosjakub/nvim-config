@@ -318,6 +318,7 @@ end
     -- i - insert mode
     -- esc-esc - vim mode
     -- :q exit the terminal
+
   -- (TJ) spawn a terminal at the bottom
   vim.keymap.set("n", "<leader>tj", function ()
     vim.cmd.vnew()
@@ -325,30 +326,47 @@ end
     vim.cmd.wincmd("J")
     vim.api.nvim_win_set_height(0,15)
   end, { desc = '[j] Open terminal at the bottom' })
+  
+  -- -- (TJ) spawn a terminal to the left
+  -- vim.keymap.set("n", "<leader>th", function ()
+  --   vim.cmd.vsplit()
+  --   vim.cmd.term()
+  --   vim.cmd.wincmd("H")
+  --   vim.api.nvim_win_set_width(0,40)
+  -- end, { desc = '[h] Open terminal at the left' })
+  
+  -- (TJ) spawn a terminal to the right
+  vim.keymap.set("n", "<leader>tl", function ()
+    vim.cmd.vsplit()
+    vim.cmd.term()
+    vim.cmd.wincmd("L")
+    vim.api.nvim_win_set_width(0,80)
+  end, { desc = '[l] Open terminal at the right' })
 
--- -- (TJ) spawn a terminal at the bottom
--- vim.keymap.set("n", "<leader>tj", function ()
---   vim.cmd.vnew()
---   vim.cmd.term()
---   vim.cmd.wincmd("J")
---   vim.api.nvim_win_set_height(0,15)
--- end, { desc = '[j] Open terminal at the bottom' })
---
--- -- (TJ) spawn a terminal to the left
--- vim.keymap.set("n", "<leader>th", function ()
---   vim.cmd.vsplit()
---   vim.cmd.term()
---   vim.cmd.wincmd("H")
---   vim.api.nvim_win_set_width(0,40)
--- end, { desc = '[h] Open terminal at the left' })
---
--- -- (TJ) spawn a terminal to the right
--- vim.keymap.set("n", "<leader>tl", function ()
---   vim.cmd.vsplit()
---   vim.cmd.term()
---   vim.cmd.wincmd("L")
---   vim.api.nvim_win_set_width(0,40)
--- end, { desc = '[l] Open terminal at the right' })
+
+  -- Toggleterm - floating popup terminal
+  vim.pack.add({
+      "https://github.com/akinsho/toggleterm.nvim"
+  })
+  -- Load toggleterm
+  require("toggleterm").setup({
+    size = 20,
+    open_mapping = [[<C-`>]],        -- toggle with Ctrl+`
+    direction = "float",             -- or "horizontal" / "vertical"
+    float_opts = {
+      border = "curved",
+    },
+  })
+  -- -- Optional: convenient terminal keymaps in normal mode
+  -- vim.keymap.set("n", "<leader>th", "<cmd>ToggleTerm size=10 direction=horizontal<cr>", { desc = "Horizontal terminal" })
+  -- vim.keymap.set("n", "<leader>tv", "<cmd>ToggleTerm size=80 direction=vertical<cr>",   { desc = "Vertical terminal" })
+  -- vim.keymap.set("n", "<leader>tf", "<cmd>ToggleTerm direction=float<cr>",               { desc = "Floating terminal" })
+
+
+
+
+
+
 
 
 
@@ -1255,22 +1273,47 @@ do
   -- require 'custom.plugins'
 
 
+  --------------------------------------------------------------------------------------------
   vim.pack.add { { src = gh 'theprimeagen/harpoon', version = 'harpoon2' } }
   vim.pack.add { gh "nvim-lua/plenary.nvim" }
 
   local harpoon = require("harpoon")
   harpoon:setup()
 
-  vim.keymap.set("n", "<leader>hh", function() harpoon.ui:toggle_quick_menu(harpoon:list()) end, { desc = "Harpoon menu" })
+  vim.keymap.set("n", "<C-Tab>", function() harpoon.ui:toggle_quick_menu(harpoon:list()) end, { desc = "Harpoon menu" })
   vim.keymap.set("n", "<leader>ha", function() harpoon:list():append() end, { desc = "Harpoon add file" })
 
-  vim.keymap.set("n", "<leader>hn", function() harpoon:list():next() end, { desc = "Harpoon next item" })
-  vim.keymap.set("n", "<leader>hp", function() harpoon:list():prev() end, { desc = "Harpoon previous item" })
+  vim.keymap.set("n", "<C-n>", function() harpoon:list():next() end, { desc = "Harpoon next item" })
+  vim.keymap.set("n", "<C-p>", function() harpoon:list():prev() end, { desc = "Harpoon previous item" })
 
-  vim.keymap.set("n", "<leader>1", function() harpoon:list():select(1) end, { desc = "Select item 1 (harpoon)" })
-  vim.keymap.set("n", "<leader>2", function() harpoon:list():select(2) end, { desc = "Select item 2 (harpoon)" })
-  vim.keymap.set("n", "<leader>3", function() harpoon:list():select(3) end, { desc = "Select item 3 (harpoon)" })
-  vim.keymap.set("n", "<leader>4", function() harpoon:list():select(4) end, { desc = "Select item 4 (harpoon)" })
+  -- vim.keymap.set("n", "<leader>1", function() harpoon:list():select(1) end, { desc = "Select item 1 (harpoon)" })
+  -- vim.keymap.set("n", "<leader>2", function() harpoon:list():select(2) end, { desc = "Select item 2 (harpoon)" })
+  -- vim.keymap.set("n", "<leader>3", function() harpoon:list():select(3) end, { desc = "Select item 3 (harpoon)" })
+  -- vim.keymap.set("n", "<leader>4", function() harpoon:list():select(4) end, { desc = "Select item 4 (harpoon)" })
+
+  local harpoon_extensions = require("harpoon.extensions")
+  harpoon:extend(harpoon_extensions.builtins.highlight_current_file())
+
+  -- Telescope & harpoon - search for harpoon file
+  local conf = require("telescope.config").values
+  local function toggle_telescope(harpoon_files)
+      local file_paths = {}
+      for _, item in ipairs(harpoon_files.items) do
+          table.insert(file_paths, item.value)
+      end
+
+      require("telescope.pickers").new({}, {
+          prompt_title = "Harpoon",
+          finder = require("telescope.finders").new_table({
+              results = file_paths,
+          }),
+          previewer = conf.file_previewer({}),
+          sorter = conf.generic_sorter({}),
+      }):find()
+  end
+  vim.keymap.set("n", "<leader>ht", function() toggle_telescope(harpoon:list()) end, { desc = "Harpoon telescope find" })
+
+  --------------------------------------------------------------------------------------------
 
 
 
