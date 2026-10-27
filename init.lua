@@ -303,7 +303,9 @@ end
   -- vim.keymap.set('n', '<leader>v', ':silent !imv % &<CR>', { desc = 'View with imv' })
 
   vim.o.autoread = true
-  vim.api.nvim_create_autocmd({ "FocusGained", "BufEnter", "CursorHold" }, {
+  -- Checking timestamps on every CursorHold is needlessly expensive with a
+  -- short `updatetime`; checking when focus/buffer changes is sufficient.
+  vim.api.nvim_create_autocmd({ "FocusGained", "BufEnter" }, {
     command = "if mode() != 'c' | checktime | endif",
   })
 
@@ -1014,7 +1016,9 @@ do
       local client = vim.lsp.get_client_by_id(event.data.client_id)
       if client and client:supports_method('textDocument/documentHighlight', event.buf) then
         local highlight_augroup = vim.api.nvim_create_augroup('kickstart-lsp-highlight', { clear = false })
-        vim.api.nvim_create_autocmd({ 'CursorHold', 'CursorHoldI' }, {
+        -- Do not send document-highlight requests while typing.  Some language
+        -- servers make these requests contend with completion and diagnostics.
+        vim.api.nvim_create_autocmd('CursorHold', {
           buffer = event.buf,
           group = highlight_augroup,
           callback = vim.lsp.buf.document_highlight,
@@ -1250,8 +1254,10 @@ do
     -- See `:help blink-cmp-config-fuzzy` for more information
     fuzzy = { implementation = 'lua' },
 
-    -- Shows a signature help window while you type arguments for a function
-    signature = { enabled = true },
+    -- Signature-help requests are sent on every edit inside a call.  Keeping
+    -- this off makes completion more responsive; use `vim.lsp.buf.signature_help()`
+    -- when you explicitly want the signature popup.
+    signature = { enabled = false },
   }
 end
 
