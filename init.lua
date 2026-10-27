@@ -81,8 +81,9 @@ do
   -- Keep signcolumn on by default
   vim.o.signcolumn = 'yes'
 
-  -- Decrease update time
-  vim.o.updatetime = 250
+  -- Run idle-triggered work less often; this keeps CursorHold-based plugins
+  -- and LSP requests from competing with typing and completion.
+  vim.o.updatetime = 500
 
   -- Decrease mapped sequence wait time
   vim.o.timeoutlen = 300
@@ -183,16 +184,7 @@ do
   --   end,
   -- })
 
-  vim.pack.add({
-    { src = 'https://github.com/nvim-tree/nvim-web-devicons' }
-  })
   -- vim.opt.guifont = "JetBrainsMono Nerd Font:h11"
-
-  vim.pack.add({
-    { src = 'https://github.com/nvim-tree/nvim-tree.lua' },
-  })
-  vim.g.loaded_netrw = 1
-  vim.g.loaded_netrwPlugin = 1
   -- optionally enable 24-bit colour
   vim.opt.termguicolors = true
 
@@ -281,23 +273,20 @@ local function my_on_attach(bufnr)
   end, opts("Open"))
 end
 
-
-  require("nvim-tree").setup({
-    view = {
-      width = 40,
-    },
-    filters = {
-      dotfiles = false,
-      git_ignored = false
-    },
+  vim.pack.add {
+    { src = 'https://github.com/nvim-tree/nvim-web-devicons' },
+    { src = 'https://github.com/nvim-tree/nvim-tree.lua' },
+  }
+  vim.g.loaded_netrw = 1
+  vim.g.loaded_netrwPlugin = 1
+  require("nvim-tree").setup {
+    view = { width = 40 },
+    filters = { dotfiles = false, git_ignored = false },
     on_attach = my_on_attach,
-    update_focused_file = {
-      enable = true,
-      update_root = true,
-    },
-  })
-  vim.keymap.set("n", "<leader>e", "<cmd>NvimTreeToggle<CR>", {desc = "Toggle tree view"})
-  vim.keymap.set("n", "<leader>ce", "<cmd>NvimTreeFindFile!<CR>", {desc = "Open tree view on current file"})
+    update_focused_file = { enable = true, update_root = true },
+  }
+  vim.keymap.set("n", "<leader>e", "<cmd>NvimTreeToggle<CR>", { desc = "Toggle tree view" })
+  vim.keymap.set("n", "<leader>ce", "<cmd>NvimTreeFindFile!<CR>", { desc = "Open tree view on current file" })
 
   -- View any image or GIF with imv
   -- vim.keymap.set('n', '<leader>v', ':silent !imv % &<CR>', { desc = 'View with imv' })
@@ -353,19 +342,13 @@ end
   end, { desc = '[l] Open terminal at the right' })
 
 
-  -- Toggleterm - floating popup terminal
-  vim.pack.add({
-      "https://github.com/akinsho/toggleterm.nvim"
-  })
-  -- Load toggleterm
-  require("toggleterm").setup({
+  vim.pack.add { "https://github.com/akinsho/toggleterm.nvim" }
+  require("toggleterm").setup {
     size = 20,
-    open_mapping = [[<C-`>]],        -- toggle with Ctrl+`
-    direction = "float",             -- or "horizontal" / "vertical"
-    float_opts = {
-      border = "curved",
-    },
-  })
+    open_mapping = [[<C-`>]],
+    direction = "float",
+    float_opts = { border = "curved" },
+  }
   -- -- Optional: convenient terminal keymaps in normal mode
   -- vim.keymap.set("n", "<leader>th", "<cmd>ToggleTerm size=10 direction=horizontal<cr>", { desc = "Horizontal terminal" })
   -- vim.keymap.set("n", "<leader>tv", "<cmd>ToggleTerm size=80 direction=vertical<cr>",   { desc = "Vertical terminal" })
@@ -613,6 +596,29 @@ end
 ---@return string
 local function gh(repo) return 'https://github.com/' .. repo end
 
+local telescope_loaded = false
+local function telescope_builtin()
+  if not telescope_loaded then
+    local plugins = {
+      gh 'nvim-lua/plenary.nvim',
+      gh 'nvim-telescope/telescope.nvim',
+      gh 'nvim-telescope/telescope-ui-select.nvim',
+    }
+    if vim.fn.executable 'make' == 1 then table.insert(plugins, gh 'nvim-telescope/telescope-fzf-native.nvim') end
+    vim.pack.add(plugins)
+
+    require('telescope').setup {
+      extensions = { ['ui-select'] = { require('telescope.themes').get_dropdown() } },
+    }
+    pcall(require('telescope').load_extension, 'fzf')
+    pcall(require('telescope').load_extension, 'ui-select')
+    telescope_loaded = true
+  end
+  return require 'telescope.builtin'
+end
+
+local builtin = telescope_builtin()
+
 -- ============================================================
 -- SECTION 4: UI / CORE UX PLUGINS
 -- guess-indent, gitsigns, which-key, colorscheme, todo-comments, mini modules
@@ -813,46 +819,11 @@ do
   -- Telescope picker. This is really useful to discover what Telescope can
   -- do as well as how to actually do it!
 
-  ---@type (string|vim.pack.Spec)[]
-  local telescope_plugins = {
-    gh 'nvim-lua/plenary.nvim',
-    gh 'nvim-telescope/telescope.nvim',
-    gh 'nvim-telescope/telescope-ui-select.nvim',
-  }
-  if vim.fn.executable 'make' == 1 then table.insert(telescope_plugins, gh 'nvim-telescope/telescope-fzf-native.nvim') end
-
-  -- NOTE: You can install multiple plugins at once
-  vim.pack.add(telescope_plugins)
-
-  -- See `:help telescope` and `:help telescope.setup()`
-  require('telescope').setup {
-    -- You can put your default mappings / updates / etc. in here
-    --  All the info you're looking for is in `:help telescope.setup()`
-    --
-    -- defaults = {
-    --   mappings = {
-    --     i = { ['<c-enter>'] = 'to_fuzzy_refine' },
-    --   },
-    -- },
-    -- pickers = {}
-    extensions = {
-      ['ui-select'] = { require('telescope.themes').get_dropdown() },
-    },
-  }
-
-  -- Enable Telescope extensions if they are installed
-  pcall(require('telescope').load_extension, 'fzf')
-  pcall(require('telescope').load_extension, 'ui-select')
-
-  -- See `:help telescope.builtin`
-  local builtin = require 'telescope.builtin'
   vim.keymap.set('n', '<leader>sh', builtin.help_tags, { desc = '[S]earch [H]elp' })
   vim.keymap.set('n', '<leader>sk', builtin.keymaps, { desc = '[S]earch [K]eymaps' })
-
   vim.keymap.set('n', '<leader>sff', builtin.find_files, { desc = '[S]earch [F]ind [F]iles' })
   vim.keymap.set('n', '<leader>sfg', builtin.git_files, { desc = '[S]earch [G]it [F]iles' })
   vim.keymap.set('n', '<leader>sg', builtin.live_grep, { desc = '[S]earch by [G]rep' })
-
   vim.keymap.set('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
   vim.keymap.set({ 'n', 'v' }, '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
   vim.keymap.set('n', '<leader>sd', builtin.diagnostics, { desc = '[S]earch [D]iagnostics' })
@@ -921,8 +892,12 @@ do
   -- Shortcut for searching your Neovim configuration files
   vim.keymap.set('n', '<leader>sn', function() builtin.find_files { cwd = vim.fn.stdpath 'config', follow = true } end, { desc = '[S]earch [N]eovim files' })
 
-  vim.cmd.packad('nvim.undotree')
+  local undotree_loaded = false
   vim.keymap.set('n', '<leader>u', function()
+    if not undotree_loaded then
+      vim.cmd.packadd 'nvim.undotree'
+      undotree_loaded = true
+    end
     require('undotree').open({
       command = "leftabove 60vnew",
     })
@@ -972,10 +947,6 @@ do
   --
   -- If you're wondering about lsp vs treesitter, you can check out the wonderfully
   -- and elegantly composed help section, `:help lsp-vs-treesitter`
-
-  -- Useful status updates for LSP.
-  vim.pack.add { gh 'j-hui/fidget.nvim' }
-  require('fidget').setup {}
 
   --  This function gets run when an LSP attaches to a particular buffer.
   --    That is to say, every time a new file is opened that is associated with
@@ -1056,7 +1027,19 @@ do
   local servers = {
     -- clangd = {},
     -- gopls = {},
-    pyright = {},
+    pyright = {
+      settings = {
+        python = {
+          analysis = {
+            -- Analyze the files being edited instead of indexing every source
+            -- file in a large repository.  A project can override this in
+            -- pyproject.toml when full-workspace diagnostics are needed.
+            diagnosticMode = 'openFilesOnly',
+            exclude = { '**/.git', '**/.venv', '**/venv', '**/__pycache__', '**/build', '**/dist', '**/node_modules' },
+          },
+        },
+      },
+    },
     -- rust_analyzer = {},
     --
     -- Some languages (like typescript) have entire language plugins that can be useful:
@@ -1064,8 +1047,6 @@ do
     --
     -- But for many setups, the LSP (`ts_ls`) will work just fine
     -- ts_ls = {},
-
-    stylua = {}, -- Used to format Lua code
 
     -- Special Lua Config, as recommended by neovim help docs
     lua_ls = {
@@ -1124,7 +1105,7 @@ do
   -- You can press `g?` for help in this menu.
   local ensure_installed = vim.tbl_keys(servers or {})
   vim.list_extend(ensure_installed, {
-    -- You can add other tools here that you want Mason to install
+    'stylua', -- Formatter; it is not an LSP server.
   })
 
   require('mason-tool-installer').setup { ensure_installed = ensure_installed }
@@ -1134,9 +1115,7 @@ do
     vim.lsp.enable(name)
   end
 
-  -- PYRIGHT
   vim.opt.exrc = true -- enables project specific .nvim.lua config files (docker pyright lsp support etc)
-  vim.lsp.enable("pyright")
 end
 
 -- ============================================================
@@ -1188,13 +1167,6 @@ do
   --  See `:help vim.version.range()` for more info
   vim.pack.add { { src = gh 'L3MON4D3/LuaSnip', version = vim.version.range '2.*' } }
   require('luasnip').setup {}
-
-  -- `friendly-snippets` contains a variety of premade snippets.
-  --    See the README about individual language/framework/plugin snippets:
-  --    https://github.com/rafamadriz/friendly-snippets
-  --
-  -- vim.pack.add { gh 'rafamadriz/friendly-snippets' }
-  -- require('luasnip.loaders.from_vscode').lazy_load()
 
   -- [[ Autocomplete Engine ]]
   vim.pack.add { { src = gh 'saghen/blink.cmp', version = vim.version.range '1.*' } }
@@ -1340,8 +1312,6 @@ do
   -- require 'kickstart.plugins.debug'
   -- require 'kickstart.plugins.indent_line'
   -- require 'kickstart.plugins.lint'
-  -- require 'kickstart.plugins.autopairs'
-  -- require 'kickstart.plugins.neo-tree'
   -- require 'kickstart.plugins.gitsigns' -- adds gitsigns recommended keymaps
 
   -- NOTE: You can add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
@@ -1351,36 +1321,19 @@ do
 
 
   --------------------------------------------------------------------------------------------
-  -- vim.pack.add { { src = gh 'theprimeagen/harpoon', version = 'harpoon2' } }
-  -- vim.pack.add { gh "nvim-lua/plenary.nvim" }
-
-  -- require("harpoon_lists_ui").setup()
-
-
-
-  vim.pack.add { { src = gh 'theprimeagen/harpoon', version = 'harpoon2' } }
-  vim.pack.add { gh "nvim-lua/plenary.nvim" }
-
+  vim.pack.add { { src = gh 'theprimeagen/harpoon', version = 'harpoon2' }, gh 'nvim-lua/plenary.nvim' }
   local harpoon = require("harpoon")
   harpoon:setup()
+  harpoon:extend(require("harpoon.extensions").builtins.highlight_current_file())
 
   vim.keymap.set("n", "<C-Tab>", function() harpoon.ui:toggle_quick_menu(harpoon:list()) end, { desc = "Harpoon menu" })
   vim.keymap.set("n", "<leader>ha", function() harpoon:list():append() end, { desc = "Harpoon add file" })
-
   vim.keymap.set("n", "<C-J>", function() harpoon:list():next() end, { desc = "Harpoon next item" })
   vim.keymap.set("n", "<C-K>", function() harpoon:list():prev() end, { desc = "Harpoon previous item" })
 
-  -- vim.keymap.set("n", "<leader>1", function() harpoon:list():select(1) end, { desc = "Select item 1 (harpoon)" })
-  -- vim.keymap.set("n", "<leader>2", function() harpoon:list():select(2) end, { desc = "Select item 2 (harpoon)" })
-  -- vim.keymap.set("n", "<leader>3", function() harpoon:list():select(3) end, { desc = "Select item 3 (harpoon)" })
-  -- vim.keymap.set("n", "<leader>4", function() harpoon:list():select(4) end, { desc = "Select item 4 (harpoon)" })
-
-  local harpoon_extensions = require("harpoon.extensions")
-  harpoon:extend(harpoon_extensions.builtins.highlight_current_file())
-
   -- Telescope & harpoon - search for harpoon file
-  local conf = require("telescope.config").values
   local function toggle_telescope(harpoon_files)
+      local conf = require("telescope.config").values
       local file_paths = {}
       for _, item in ipairs(harpoon_files.items) do
           table.insert(file_paths, item.value)
@@ -1397,45 +1350,6 @@ do
   end
   vim.keymap.set("n", "<leader>ht", function() toggle_telescope(harpoon:list()) end, { desc = "Harpoon telescope find" })
 
-  --------------------------------------------------------------------------------------------
-
-
-
-  -- vim.g.mkdp_page_title = '「${name}.md」'
-  -- vim.g.mkdp_markdown_css = vim.fn.expand('~/.config/nvim/nvim_markdown.css')
-
-  -- -- Enable markdown-preview for markdown files
-  -- vim.g.mkdp_filetypes = { "markdown", "md" }
-
-  -- -- Optional: auto-start preview when entering a markdown buffer
-  -- vim.g.mkdp_auto_start = 0  -- set to 1 if you want it auto-starting
-
-  -- -- Optional: auto-close preview when leaving markdown buffer
-  -- -- vim.g.mkdp_auto_close = 1
-
-  -- -- Optional: set theme (dark or light)
-  -- vim.g.mkdp_theme = "dark"
-
-  -- -- Optional: KaTeX config (empty = defaults, which work well for math)
-  -- vim.g.mkdp_preview_options = {
-  --   katex = {},
-  --   mkit = {},
-  --   disable_sync_scroll = 0,
-  --   sync_scroll_type = "middle",
-  --   hide_yaml_meta = 1,
-  -- }
-  -- vim.keymap.set("n", "<leader>m", "<Plug>MarkdownPreviewToggle", { desc = "Toggle Markdown Preview [v2]" })
-
-  --vim.keymap.set("n", "<leader>m", "<Plug>MarkdownPreviewToggle", { desc = "Toggle Markdown Preview [v2]" })
-  -- vim.api.nvim_create_autocmd("FileType", {
-  -- pattern = "markdown",
-  -- callback = function()
-  --   vim.keymap.set("n", "<leader>m", function()
-  --     vim.cmd("!ks-notebook-live " .. vim.fn.shellescape(vim.fn.expand("%:p")))
-  --   end, { buffer = true, desc = "Run mycommand on markdown file" })
-  -- end,
-  -- })
-
 vim.api.nvim_create_autocmd("FileType", {
   pattern = "markdown",
   callback = function()
@@ -1450,28 +1364,6 @@ vim.api.nvim_create_autocmd("FileType", {
     end, { buffer = true, desc = "Run ks-notebook-live on markdown file" })
   end,
 })
-
-  -- -- markdown preview
-  -- vim.pack.add({
-  --   "https://github.com/OXY2DEV/markview.nvim",
-  -- })
-  -- require("markview").setup({
-  --   latex = {
-  --     enable = true,
-  --     inlines = { enable = true },   -- for $...$
-  --     block  = { enable = true },   -- for $$...$$
-  --     symbols = { enable = true },
-  --     operators = { enable = true },
-  --     subscript = { enable = true },
-  --     superscript = { enable = true },
-  --   },
-  --   preview = {
-  --     enable = true,
-  --     filetypes = { "markdown", "md" },
-  --   }
-  -- })
-  -- vim.keymap.set("n", "<leader>m", "<cmd>Markview splitToggle<CR>")
-
 
 end
 
