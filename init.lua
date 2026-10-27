@@ -57,7 +57,7 @@ do
   -- Enable mouse mode, can be useful for resizing splits for example!
   vim.o.mouse = 'a'
 
-  vim.opt.mousescroll = "ver:1"
+  vim.opt.mousescroll = "ver:2"
 
   -- Don't show the mode, since it's already in the status line
   vim.o.showmode = false
@@ -287,18 +287,25 @@ end
       width = 40,
     },
     filters = {
-      dotfiles = true,
+      dotfiles = false,
       git_ignored = false
     },
     on_attach = my_on_attach,
+    update_focused_file = {
+      enable = true,
+      update_root = true,
+    },
   })
   vim.keymap.set("n", "<leader>e", "<cmd>NvimTreeToggle<CR>", {desc = "Toggle tree view"})
+  vim.keymap.set("n", "<leader>ce", "<cmd>NvimTreeFindFile!<CR>", {desc = "Open tree view on current file"})
 
   -- View any image or GIF with imv
   -- vim.keymap.set('n', '<leader>v', ':silent !imv % &<CR>', { desc = 'View with imv' })
 
-
-
+  vim.o.autoread = true
+  vim.api.nvim_create_autocmd({ "FocusGained", "BufEnter", "CursorHold" }, {
+    command = "if mode() != 'c' | checktime | endif",
+  })
 
 
   -- vim.pack.add { "https://github.com/lervag/vimtex"}
@@ -463,6 +470,11 @@ end
   vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
   vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
 
+  vim.keymap.set('n', '<C-Left>', '<C-w><C-h>', { desc = 'Move focus to the left window' })
+  vim.keymap.set('n', '<C-Right>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
+  vim.keymap.set('n', '<C-Down>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
+  vim.keymap.set('n', '<C-Up>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
+
   -- NOTE: Some terminals have colliding keymaps or are not able to send distinct keycodes
   -- vim.keymap.set("n", "<C-S-h>", "<C-w>H", { desc = "Move window to the left" })
   -- vim.keymap.set("n", "<C-S-l>", "<C-w>L", { desc = "Move window to the right" })
@@ -486,7 +498,44 @@ end
 
 
 
-  vim.keymap.set('n', '<leader>g', '<cmd>Git<CR>')
+--vim.keymap.set('n', '<leader>g', '<cmd>Git<CR>')
+local function toggle_git_current_tab()
+  local current_tab = vim.api.nvim_get_current_tabpage()
+
+  -- Get all windows in the current tab
+  local tab_wins = vim.api.nvim_tabpage_list_wins(current_tab)
+
+  for _, win in ipairs(tab_wins) do
+    local buf = vim.api.nvim_win_get_buf(win)
+    local name = vim.api.nvim_buf_get_name(buf)
+
+    if name:match("^fugitive:") then
+      -- Found fugitive buffer in this tab: close its window
+      vim.api.nvim_win_close(win, true)
+      return
+    end
+  end
+
+  -- No fugitive window in this tab: open :Git
+  vim.cmd("Git")
+end
+
+vim.keymap.set("n", "<leader>gg", toggle_git_current_tab, {
+  desc = "Toggle Git status (current tab)",
+})
+vim.keymap.set('n', '<leader>gv', '<cmd>Gvdiffsplit HEAD<cr>', { desc = 'Git diff vs HEAD' })
+-- vim.keymap.set('n', '<leader>gD', '<cmd>Gvdiffsplit<cr>', { desc = 'Git diff vs index' })
+vim.keymap.set('n', '<leader>gc', function()
+  for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+    local buf = vim.api.nvim_win_get_buf(win)
+    if vim.api.nvim_buf_get_name(buf):match('^fugitive://') then
+      vim.api.nvim_win_close(win, true)
+    end
+  end
+  vim.cmd('diffoff!')
+end, { desc = 'Close git diff' })
+
+
 
 end
 
@@ -610,6 +659,7 @@ do
     spec = {
       { '<leader>s', group = '[S]earch', mode = { 'n', 'v' } },
       { '<leader>t', group = '[T]oggle' },
+      { '<leader>c', group = '[C]urrent file' },
       { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } }, -- Enable gitsigns recommended keymaps first
       { 'gr', group = 'LSP Actions', mode = { 'n' } },
     },
@@ -796,11 +846,13 @@ do
   local builtin = require 'telescope.builtin'
   vim.keymap.set('n', '<leader>sh', builtin.help_tags, { desc = '[S]earch [H]elp' })
   vim.keymap.set('n', '<leader>sk', builtin.keymaps, { desc = '[S]earch [K]eymaps' })
-  vim.keymap.set('n', '<leader>sf', builtin.find_files, { desc = '[S]earch [F]iles' })
-  vim.keymap.set('n', '<leader>sgf', builtin.git_files, { desc = '[S]earch [G]it [F]iles' })
+
+  vim.keymap.set('n', '<leader>sff', builtin.find_files, { desc = '[S]earch [F]ind [F]iles' })
+  vim.keymap.set('n', '<leader>sfg', builtin.git_files, { desc = '[S]earch [G]it [F]iles' })
+  vim.keymap.set('n', '<leader>sg', builtin.live_grep, { desc = '[S]earch by [G]rep' })
+
   vim.keymap.set('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
   vim.keymap.set({ 'n', 'v' }, '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
-  vim.keymap.set('n', '<leader>sg', builtin.live_grep, { desc = '[S]earch by [G]rep' })
   vim.keymap.set('n', '<leader>sd', builtin.diagnostics, { desc = '[S]earch [D]iagnostics' })
   vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
   vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
@@ -873,6 +925,19 @@ do
       command = "leftabove 60vnew",
     })
   end, { desc = "Open undotree" })
+  
+
+
+
+  -- auto-session-save
+  vim.pack.add({
+    "https://github.com/rmagatti/auto-session",
+  })
+  require("auto-session").setup({
+    auto_save_enabled = true,
+    auto_restore_enabled = true,
+    suppress_dirs = { "~/", "~/Downloads", "~/Documents"}, -- don't create sessions for these
+  })
 
 end
 -- ============================================================
@@ -939,6 +1004,8 @@ do
       --  For example, in C this would take you to the header.
       map('grD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
 
+      map('gd', vim.lsp.buf.definition, '[G]oto [D]efinition')
+
       -- The following two autocommands are used to highlight references of the
       -- word under your cursor when your cursor rests there for a little while.
       --    See `:help CursorHold` for information about when this is executed
@@ -985,7 +1052,7 @@ do
   local servers = {
     -- clangd = {},
     -- gopls = {},
-    -- pyright = {},
+    pyright = {},
     -- rust_analyzer = {},
     --
     -- Some languages (like typescript) have entire language plugins that can be useful:
@@ -1062,6 +1129,10 @@ do
     vim.lsp.config(name, server)
     vim.lsp.enable(name)
   end
+
+  -- PYRIGHT
+  vim.opt.exrc = true -- enables project specific .nvim.lua config files (docker pyright lsp support etc)
+  vim.lsp.enable("pyright")
 end
 
 -- ============================================================
@@ -1274,6 +1345,13 @@ do
 
 
   --------------------------------------------------------------------------------------------
+  -- vim.pack.add { { src = gh 'theprimeagen/harpoon', version = 'harpoon2' } }
+  -- vim.pack.add { gh "nvim-lua/plenary.nvim" }
+
+  -- require("harpoon_lists_ui").setup()
+
+
+
   vim.pack.add { { src = gh 'theprimeagen/harpoon', version = 'harpoon2' } }
   vim.pack.add { gh "nvim-lua/plenary.nvim" }
 
@@ -1283,8 +1361,8 @@ do
   vim.keymap.set("n", "<C-Tab>", function() harpoon.ui:toggle_quick_menu(harpoon:list()) end, { desc = "Harpoon menu" })
   vim.keymap.set("n", "<leader>ha", function() harpoon:list():append() end, { desc = "Harpoon add file" })
 
-  vim.keymap.set("n", "<C-n>", function() harpoon:list():next() end, { desc = "Harpoon next item" })
-  vim.keymap.set("n", "<C-p>", function() harpoon:list():prev() end, { desc = "Harpoon previous item" })
+  vim.keymap.set("n", "<C-J>", function() harpoon:list():next() end, { desc = "Harpoon next item" })
+  vim.keymap.set("n", "<C-K>", function() harpoon:list():prev() end, { desc = "Harpoon previous item" })
 
   -- vim.keymap.set("n", "<leader>1", function() harpoon:list():select(1) end, { desc = "Select item 1 (harpoon)" })
   -- vim.keymap.set("n", "<leader>2", function() harpoon:list():select(2) end, { desc = "Select item 2 (harpoon)" })
@@ -1317,31 +1395,55 @@ do
 
 
 
-  vim.g.mkdp_page_title = '「${name}.md」'
-  vim.g.mkdp_markdown_css = vim.fn.expand('~/.config/nvim/nvim_markdown.css')
+  -- vim.g.mkdp_page_title = '「${name}.md」'
+  -- vim.g.mkdp_markdown_css = vim.fn.expand('~/.config/nvim/nvim_markdown.css')
 
-  -- Enable markdown-preview for markdown files
-  vim.g.mkdp_filetypes = { "markdown", "md" }
+  -- -- Enable markdown-preview for markdown files
+  -- vim.g.mkdp_filetypes = { "markdown", "md" }
 
-  -- Optional: auto-start preview when entering a markdown buffer
-  vim.g.mkdp_auto_start = 0  -- set to 1 if you want it auto-starting
+  -- -- Optional: auto-start preview when entering a markdown buffer
+  -- vim.g.mkdp_auto_start = 0  -- set to 1 if you want it auto-starting
 
-  -- Optional: auto-close preview when leaving markdown buffer
-  -- vim.g.mkdp_auto_close = 1
+  -- -- Optional: auto-close preview when leaving markdown buffer
+  -- -- vim.g.mkdp_auto_close = 1
 
-  -- Optional: set theme (dark or light)
-  vim.g.mkdp_theme = "dark"
+  -- -- Optional: set theme (dark or light)
+  -- vim.g.mkdp_theme = "dark"
 
-  -- Optional: KaTeX config (empty = defaults, which work well for math)
-  vim.g.mkdp_preview_options = {
-    katex = {},
-    mkit = {},
-    disable_sync_scroll = 0,
-    sync_scroll_type = "middle",
-    hide_yaml_meta = 1,
-  }
-  vim.keymap.set("n", "<leader>m", "<Plug>MarkdownPreviewToggle", { desc = "Toggle Markdown Preview [v2]" })
+  -- -- Optional: KaTeX config (empty = defaults, which work well for math)
+  -- vim.g.mkdp_preview_options = {
+  --   katex = {},
+  --   mkit = {},
+  --   disable_sync_scroll = 0,
+  --   sync_scroll_type = "middle",
+  --   hide_yaml_meta = 1,
+  -- }
+  -- vim.keymap.set("n", "<leader>m", "<Plug>MarkdownPreviewToggle", { desc = "Toggle Markdown Preview [v2]" })
 
+  --vim.keymap.set("n", "<leader>m", "<Plug>MarkdownPreviewToggle", { desc = "Toggle Markdown Preview [v2]" })
+  -- vim.api.nvim_create_autocmd("FileType", {
+  -- pattern = "markdown",
+  -- callback = function()
+  --   vim.keymap.set("n", "<leader>m", function()
+  --     vim.cmd("!ks-notebook-live " .. vim.fn.shellescape(vim.fn.expand("%:p")))
+  --   end, { buffer = true, desc = "Run mycommand on markdown file" })
+  -- end,
+  -- })
+
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = "markdown",
+  callback = function()
+    vim.keymap.set("n", "<leader>m", function()
+      local file = vim.fn.expand("%:p")
+      local job = vim.fn.jobstart({ "ks-notebook-live", file }, { detach = true })
+      if job > 0 then
+        vim.notify("Mardown opened: " .. vim.fn.expand("%:t"))
+      else
+        vim.notify("Failed to start  ks-notebook-live on: " .. vim.fn.expand("%:t"), vim.log.levels.ERROR)
+      end
+    end, { buffer = true, desc = "Run ks-notebook-live on markdown file" })
+  end,
+})
 
   -- -- markdown preview
   -- vim.pack.add({
