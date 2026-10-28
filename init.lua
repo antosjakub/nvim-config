@@ -83,7 +83,7 @@ do
 
   -- Run idle-triggered work less often; this keeps CursorHold-based plugins
   -- and LSP requests from competing with typing and completion.
-  vim.o.updatetime = 500
+  vim.o.updatetime = 250
 
   -- Decrease mapped sequence wait time
   vim.o.timeoutlen = 300
@@ -141,6 +141,12 @@ do
     end,
   })
   vim.cmd('packloadall')
+
+  ---Because most plugins are hosted on GitHub, you can use the helper
+  ---function to have less repetition in the following sections.
+  ---@param repo string
+  ---@return string
+  function gh(repo) return 'https://github.com/' .. repo end
 
 end
 
@@ -214,6 +220,7 @@ do
 local function my_on_attach(bufnr)
   local api = require("nvim-tree.api")
 
+
   -- api.config.mappings.default_on_attach(bufnr)
 
   api.map.on_attach.default(bufnr)
@@ -273,18 +280,98 @@ local function my_on_attach(bufnr)
   end, opts("Open"))
 end
 
+
+  vim.pack.add { gh 'rebelot/kanagawa.nvim' }
+  require("kanagawa").setup({
+    overrides = function(colors)
+      local theme = colors.theme
+
+      return {
+        BlinkCmpMenu = {
+          fg = theme.ui.fg,
+          bg = theme.ui.bg_m1,
+        },
+
+        BlinkCmpMenuSelection = {
+          fg = theme.ui.fg,
+          bg = theme.ui.bg_m2,
+          bold = false,
+        },
+
+        BlinkCmpMenuBorder = {
+          fg = theme.ui.bg_p2,
+          bg = theme.ui.bg,
+        },
+
+        BlinkCmpScrollBarGutter = {
+          bg = theme.ui.bg,
+        },
+
+        BlinkCmpScrollBarThumb = {
+          bg = theme.ui.bg_p2,
+        },
+      }
+    end,
+    -- terminalColors = true,
+    -- theme = "dragon",
+    -- colors = {
+    --   theme = {
+    --     dragon = {
+    --       ui = {
+    --         bg = '#1D1C19'
+    --       },
+    --     },
+    --   },
+    -- },
+  })
+
+
+  -- Load the colorscheme here.
+    -- habamax
+  vim.cmd.colorscheme('kanagawa-dragon')
+  -- vim.cmd.colorscheme('kanagawa-wave')
+  -- vim.cmd.colorscheme('habamax')
+
+
+
+
   vim.pack.add {
     { src = 'https://github.com/nvim-tree/nvim-web-devicons' },
     { src = 'https://github.com/nvim-tree/nvim-tree.lua' },
   }
   vim.g.loaded_netrw = 1
   vim.g.loaded_netrwPlugin = 1
+
   require("nvim-tree").setup {
-    view = { width = 40 },
+    view = {
+      width = 40,
+      signcolumn = "yes"
+    },
+    renderer = {
+      icons = {
+        git_placement = "after",
+        glyphs = {
+          git = {
+            unstaged = ".",
+            staged = "S",
+            unmerged = "UM",
+            renamed = "R",
+            untracked = "?",
+            deleted = "D",
+            -- ignored = "I",
+          }
+        }
+      }
+    },
     filters = { dotfiles = false, git_ignored = false },
     on_attach = my_on_attach,
     update_focused_file = { enable = true, update_root = true },
   }
+  vim.api.nvim_set_hl(0, "NvimTreeGitDeletedIcon", {
+    fg="#ac3922",
+    bold = false,
+  })
+
   vim.keymap.set("n", "<leader>e", "<cmd>NvimTreeToggle<CR>", { desc = "Toggle tree view" })
   vim.keymap.set("n", "<leader>ce", "<cmd>NvimTreeFindFile!<CR>", { desc = "Open tree view on current file" })
 
@@ -590,11 +677,6 @@ do
   })
 end
 
----Because most plugins are hosted on GitHub, you can use the helper
----function to have less repetition in the following sections.
----@param repo string
----@return string
-local function gh(repo) return 'https://github.com/' .. repo end
 
 local telescope_loaded = false
 local function telescope_builtin()
@@ -686,27 +768,6 @@ do
   --     comments = { italic = false }, -- Disable italics in comments
   --   },
   -- }
-  vim.pack.add { gh 'rebelot/kanagawa.nvim' }
-  require("kanagawa").setup({
-    -- terminalColors = true,
-    -- theme = "dragon",
-    -- colors = {
-    --   theme = {
-    --     wave = {
-    --       ui = {
-    --         bg = "#000000",
-    --       },
-    --     },
-    --   },
-    -- },
-  })
-
-
-  -- Load the colorscheme here.
-    -- habamax
-  vim.cmd.colorscheme('kanagawa-dragon')
-  -- vim.cmd.colorscheme('kanagawa-wave')
-  -- vim.cmd.colorscheme('habamax')
 
   -- Highlight todo, notes, etc in comments
   -- vim.pack.add { gh 'folke/todo-comments.nvim' }
