@@ -352,7 +352,7 @@ end
         git_placement = "after",
         glyphs = {
           git = {
-            unstaged = ".",
+            unstaged = "U",
             staged = "S",
             unmerged = "UM",
             renamed = "R",
@@ -1387,7 +1387,10 @@ do
   harpoon:setup()
   harpoon:extend(require("harpoon.extensions").builtins.highlight_current_file())
 
-  vim.keymap.set("n", "<C-Tab>", function() harpoon.ui:toggle_quick_menu(harpoon:list()) end, { desc = "Harpoon menu" })
+  vim.keymap.set("n", "<C-Tab>", function() harpoon.ui:toggle_quick_menu(harpoon:list(), {
+      border = "none"
+    }
+  ) end, { desc = "Harpoon menu" })
   vim.keymap.set("n", "<leader>ha", function() harpoon:list():append() end, { desc = "Harpoon add file" })
   vim.keymap.set("n", "<C-J>", function() harpoon:list():next() end, { desc = "Harpoon next item" })
   vim.keymap.set("n", "<C-K>", function() harpoon:list():prev() end, { desc = "Harpoon previous item" })
